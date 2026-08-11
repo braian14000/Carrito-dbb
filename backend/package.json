@@ -1,0 +1,14 @@
+{
+  "name": "carrito-node",
+  "version": "1.0.0",
+  "description": "Carrito de compras migrado a Node.js con Express y MySQL",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.0",
+    "express": "^4.19.0",
+    "mysql2": "^3.4.0"
+  }
+}
