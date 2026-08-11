@@ -6,9 +6,12 @@
 
     <div class="row g-4 mb-4">
       <div class="col-lg-6">
-        <div class="card usuario-card shadow-sm h-100">
-          <div class="card-body">
-            <h2 class="h4 mb-3">Registro</h2>
+        <div class="card usuario-card shadow-sm h-100 border-0">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="badge bg-primary rounded-pill">1</span>
+              <h2 class="h4 mb-0">Registro</h2>
+            </div>
             <div class="mb-3">
               <label class="form-label">Nombre</label>
               <input v-model="registro.nombre" type="text" class="form-control" placeholder="Tu nombre" />
@@ -27,9 +30,12 @@
       </div>
 
       <div class="col-lg-6">
-        <div class="card usuario-card shadow-sm h-100">
-          <div class="card-body">
-            <h2 class="h4 mb-3">Iniciar sesión</h2>
+        <div class="card usuario-card shadow-sm h-100 border-0">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="badge bg-success rounded-pill">2</span>
+              <h2 class="h4 mb-0">Iniciar sesión</h2>
+            </div>
             <div class="mb-3">
               <label class="form-label">Email</label>
               <input v-model="login.email" type="email" class="form-control" placeholder="correo@ejemplo.com" />
@@ -183,7 +189,7 @@ const fetchProductos = async () => {
 
 const fetchCarrito = async () => {
   try {
-    const response = await fetch(`${apiBase.value}/carrito`);
+    const response = await fetch(`${apiBase.value}/carrito?userId=${currentUser.value?.id || 0}`);
     carrito.value = response.ok ? await response.json() : [];
   } catch {
     carrito.value = [];
@@ -192,7 +198,7 @@ const fetchCarrito = async () => {
 
 const fetchUsuario = async () => {
   try {
-    const response = await fetch(`${apiBase.value}/usuario`);
+    const response = await fetch(`${apiBase.value}/usuario?userId=${currentUser.value?.id || 0}`);
     usuario.value = response.ok ? await response.json() : { saldo: 0, cargado_inicial: false };
   } catch {
     usuario.value = { saldo: 0, cargado_inicial: false };
@@ -215,6 +221,7 @@ const registrarUsuario = async () => {
     if (!response.ok) throw new Error(data.detail || 'No se pudo registrar el usuario.');
     currentUser.value = data.user;
     registro.value = { nombre: '', email: '', password: '' };
+    await Promise.all([fetchCarrito(), fetchUsuario()]);
     Swal.fire('Éxito', data.message, 'success');
   } catch (err) {
     Swal.fire('Error', err.message, 'error');
@@ -237,6 +244,7 @@ const iniciarSesion = async () => {
     if (!response.ok) throw new Error(data.detail || 'No se pudo iniciar sesión.');
     currentUser.value = data.user;
     login.value = { email: '', password: '' };
+    await Promise.all([fetchCarrito(), fetchUsuario()]);
     Swal.fire('Bienvenido', data.message, 'success');
   } catch (err) {
     Swal.fire('Error', err.message, 'error');
@@ -257,7 +265,7 @@ const agregarProducto = async (producto) => {
     const response = await fetch(`${apiBase.value}/carrito/agregar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id_producto: producto.id, cantidad }),
+      body: JSON.stringify({ id_producto: producto.id, cantidad, userId: currentUser.value.id }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || data.message || 'Error al agregar producto.');
@@ -292,7 +300,7 @@ const cargarSaldo = async () => {
 
 const eliminarDelCarrito = async (item) => {
   try {
-    const response = await fetch(`${apiBase.value}/carrito/eliminar/${item.id}`, {
+    const response = await fetch(`${apiBase.value}/carrito/eliminar/${item.id}?userId=${currentUser.value?.id || 0}`, {
       method: 'DELETE',
     });
     const data = await response.json();
@@ -314,7 +322,11 @@ const vaciarCarrito = async () => {
   });
   if (!result.isConfirmed) return;
   try {
-    const response = await fetch(`${apiBase.value}/carrito/vaciar`, { method: 'POST' });
+    const response = await fetch(`${apiBase.value}/carrito/vaciar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.value?.id || 0 }),
+    });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || data.message || 'Error al vaciar carrito.');
     Swal.fire('Vaciado', data.message, 'success');
@@ -338,7 +350,11 @@ const finalizarCompra = async () => {
   });
   if (!result.isConfirmed) return;
   try {
-    const response = await fetch(`${apiBase.value}/carrito/finalizar`, { method: 'POST' });
+    const response = await fetch(`${apiBase.value}/carrito/finalizar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.value.id }),
+    });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || data.message || 'Error al finalizar compra.');
     Swal.fire('Compra finalizada', data.message, 'success');
